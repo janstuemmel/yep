@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "declaration": true
+  },
+  "include": ["lib.ts"]
+}
