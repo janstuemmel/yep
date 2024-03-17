@@ -1,21 +1,5 @@
-import {it, expect} from 'vitest';
-
-import {
-  pipe,
-  Nope,
-  type Result,
-  Yep,
-  flat,
-  map,
-  unwrap,
-  from,
-  mapErr,
-  orElse,
-  mapAsync,
-  liftAsync,
-  flatAsync,
-  unwrapAsync,
-} from './lib.js';
+import {expect, it} from 'vitest';
+import {type Box, err, flat, map, nah, or, unbox, yep, pipe} from './lib.js';
 
 type Expect<T extends true> = T;
 type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
@@ -24,152 +8,128 @@ type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
   ? true
   : false;
 
-const expectEqual =
-  <T, D>(a: T) =>
-  (b: D) =>
-    expect(a).toEqual(b);
-
-it('should pipe', () => {
-  pipe(5, (n) => n + 1, expectEqual(6));
-  pipe(
-    5,
-    (n) => n + 1,
-    (n) => n - 1,
-    expectEqual(5),
-  );
-  pipe('world', (n) => `hello ${n}`, expectEqual('hello world'));
+it('should unbox', async () => {
+  expect(await pipe(nah(1), unbox(0))).toEqual(0);
+  expect(await pipe(nah(1), unbox('err'))).toEqual('err');
+  expect(await pipe(yep(1), unbox(0))).toEqual(1);
 });
 
-it('should pipe Result', () => {
-  pipe(
-    Yep(5),
-    map((n) => n + 1),
-    expectEqual(Yep(6)),
-  );
-  pipe(
-    Yep(5),
-    flat(() => Nope('error')),
-    expectEqual(Nope('error')),
-  );
+it('should map', async () => {
+  expect(
+    await pipe(
+      yep(1),
+      map((n) => n + 1),
+      unbox(0),
+    ),
+  ).toEqual(2);
+  expect(
+    await pipe(
+      nah(1),
+      map((n) => n + 1),
+      unbox('err'),
+    ),
+  ).toEqual('err');
 });
 
-it('should map and flat', () => {
-  const divide = (b: number) => (a: number) =>
-    b === 0 ? Nope('divide by zero') : Yep(a / b);
-  const minusOne = (a: number) => a - 1;
-
-  pipe(Yep(5), map(minusOne), expectEqual(Yep(4)));
-  pipe(Yep(5), flat(divide(1)), map(minusOne), expectEqual(Yep(4)));
-  pipe(Yep(5), flat(divide(0)), map(minusOne), unwrap(0), expectEqual(0));
+it('should flat', async () => {
+  expect(
+    await pipe(
+      yep(1),
+      flat((n) => yep(n)),
+    ),
+  ).toEqual({ok: true, val: 1});
+  expect(
+    await pipe(
+      yep(1),
+      flat((n) => nah(`err with ${n}`)),
+    ),
+  ).toEqual({ok: false, err: 'err with 1'});
 });
 
-it('should json parse', () => {
-  const unmarshal = <T>(data: string) => {
-    try {
-      return Yep<T>(JSON.parse(data));
-    } catch (_) {
-      return Nope('json unmarshal error');
-    }
-  };
-
-  pipe(
-    '{"foo": 1}',
-    unmarshal<{foo: number}>,
-    map((val) => val.foo),
-    expectEqual(Yep(1)),
-  );
-
-  pipe(
-    '}',
-    unmarshal<{foo: number}>,
-    map((val) => val.foo),
-    expectEqual(Nope('json unmarshal error')),
-  );
+it('should err', async () => {
+  expect(
+    await pipe(
+      nah('err'),
+      err(() => 'other'),
+    ),
+  ).toEqual({ok: false, err: 'other'});
 });
 
-it('should from', () => {
-  const unmarsh = from(JSON.parse, new Error('parse error'));
-  pipe(
-    unmarsh<{foo: number}>('{"foo": 1}'),
-    map((v) => v.foo),
-    unwrap(0),
-    expectEqual(1),
-  );
-
-  pipe(
-    '{',
-    unmarsh<{foo: number}>,
-    map((v) => v.foo),
-    unwrap(0),
-    expectEqual(0),
-  );
+it('should or', async () => {
+  expect(
+    await pipe(
+      nah('err'),
+      or(() => yep('handled err')),
+    ),
+  ).toEqual({ok: true, val: 'handled err'});
+  expect(
+    await pipe(
+      nah('err'),
+      or(() => nah('other err')),
+    ),
+  ).toEqual({ok: false, err: 'other err'});
 });
 
-it('should map error', () => {
-  pipe(
-    Yep(0),
-    flat((n) => (n !== 0 ? Yep(n) : Nope(new Error()))),
-    mapErr(() => 'custom error'),
-    map((n) => n + 1),
-    expectEqual(Nope('custom error')),
+it('should accumulate errors', async () => {
+  class Not0 extends Error {}
+  class Not1 extends Error {}
+
+  const t1 = pipe(
+    yep(1),
+    flat((n) => (n === 0 ? nah(new Not0()) : yep(n))),
+    flat((n) => (n === 1 ? nah(new Not1()) : yep(n))),
   );
+  type _t1 = Expect<Equal<typeof t1, Box<number, Not0 | Not1>>>;
+  expect(await pipe(t1, unbox('err'))).toEqual('err');
+
+  const t2 = pipe(
+    t1,
+    or(() => nah('err')),
+  );
+  type _t2 = Expect<Equal<typeof t2, Box<number, string>>>;
+  expect(await pipe(t2)).toEqual({ok: false, err: 'err'});
+
+  const t3 = pipe(
+    t1,
+    err(() => 'err'),
+  );
+  type _t3 = Expect<Equal<typeof t3, Box<number, string>>>;
+  expect(await pipe(t3)).toEqual({ok: false, err: 'err'});
 });
 
-it('should orElse error', () => {
-  const foo = pipe(
-    Yep(0),
-    flat((n) => (n !== 0 ? Yep(n) : Nope(new Error()))),
-    orElse(() => Yep(1)),
-    map((n) => n + 1),
-    unwrap(0),
-    expectEqual(2),
-  );
-});
+it.skip('example', async () => {
+  class Err400 extends Error {}
+  class Err500 extends Error {}
+  class ErrParse extends Error {}
 
-it('should accumulate types', () => {
-  class Error1 extends Error {}
-  class Error2 extends Error {}
+  const request = (url: string): Box<Response, Err500> =>
+    fetch(url)
+      .then((res) => yep(res))
+      .catch(() => nah(new Err500()));
 
-  const fn1 = (n: number) => (n !== 0 ? Yep(n) : Nope(new Error2()));
-  const fn2 = (n: number) => (n !== 0 ? Yep(n) : Nope(new Error1()));
-  const fn3 = (n: number) => (n !== 0 ? Yep(n) : Nope('err'));
+  const parse = async <T>(res: Response): Box<T, ErrParse> =>
+    res
+      .json()
+      .then((j) => yep(j as T))
+      .catch(() => nah(new ErrParse()));
 
-  const test = pipe(Yep(2), flat(fn1), flat(fn2), flat(fn3));
+  const checkStatus = (res: Response) =>
+    res.status >= 400 ? nah(new Err400()) : yep(res);
 
-  type _test = Expect<
-    Equal<typeof test, Result<number, Error1 | Error2 | string>>
-  >;
-});
+  const getPokemon = (name: string) =>
+    pipe(
+      yep(name),
+      map((name) => `https://pokeapi.co/api/v2/pokemon/${name}`),
+      flat(request),
+      flat(checkStatus),
+      flat(parse<{weight: number}>),
+    );
 
-it('should map/flat async', async () => {
-  class Error1 extends Error {}
-  class Error2 extends Error {}
-  const delay = (ms: number) => (n: number) =>
-    new Promise((res) => setTimeout(res, ms)).then(() => Yep(n));
-
-  const test = await pipe(
-    Yep(3),
-    liftAsync,
-    flatAsync((n) => (n !== 0 ? Yep(n) : Nope(new Error1))),
-    flatAsync((n) => (n !== 1 ? Yep(n) : Nope(new Error2))),
-    flatAsync(delay(1)),
-    mapAsync((n) => n + 1),
-    flatAsync((n) => Yep(n.toString())),
+  const res = pipe(
+    yep('ditto'),
+    flat(getPokemon),
+    map((v) => v.weight),
   );
 
-  type _test = Expect<
-    Equal<typeof test, Result<string, Error1 | Error2>>
-  >;
-
-  expect(test).toEqual({ok: true, val: '4'});
-});
-
-it('should unwrap async', async () => {
-  const test = await pipe(
-    Yep(0),
-    liftAsync,
-    flatAsync((n) => (n !== 0 ? Yep(n) : Nope('err'))),
-    unwrapAsync('err'),
-  );
-  expect(test).toEqual('err');
+  expect(await pipe(res, unbox('err'))).toEqual(40);
 });

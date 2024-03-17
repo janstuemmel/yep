@@ -1,17 +1,12 @@
-export type Yep<T> = {ok: true; val: T};
-export type Nope<E> = {ok: false; err: E};
-export type Result<T, E> = Yep<T> | Nope<E>;
-export type ResultAsync<T, E> = Promise<Result<T, E>>;
+type Yep<T> = {ok: true; val: T};
+type Nah<E> = {ok: false; err: E};
+export type Box<T, E> = Promise<Yep<T> | Nah<E>>;
 
-export const Yep = <T>(val: T): Result<T, never> => ({ok: true, val});
+const _yep = <T>(val: T): Yep<T> => ({ok: true, val});
+const _nah = <E>(err: E): Nah<E> => ({ok: false, err});
 
-export const Nope = <E>(err: E): Result<never, E> => ({ok: false, err});
-
-export const YepAsync = <T>(val: T): ResultAsync<T, never> =>
-  Promise.resolve(Yep(val));
-
-export const NopeAsync = <E>(err: E): ResultAsync<never, E> =>
-  Promise.resolve(Nope(err));
+export const yep = <T>(v: T): Box<T, never> => Promise.resolve(_yep(v));
+export const nah = <E>(err: E): Box<never, E> => Promise.resolve(_nah(err));
 
 type Pipe = {
   <A>(a: A): A;
@@ -43,64 +38,31 @@ type Pipe = {
     fg: (f: F) => G,
   ): G;
 };
-  
+
 export const pipe: Pipe = (val: unknown, ...fns: ((n: unknown) => unknown)[]) =>
   fns.reduce((c, fn) => fn(c), val);
 
-export const unwrap =
+export const unbox =
   <T, D, E>(v: D) =>
-  (res: Result<T, E>): T | D =>
-    res.ok ? res.val : v;
-
-export const unwrapAsync =
-  <T, D, E>(v: D) =>
-  (res: ResultAsync<T, E>): Promise<T | D> =>
-    res.then((r) => (r.ok ? r.val : v));
-
-export const orElse =
-  <T, D, E, F>(fn: (e: E) => Result<D, F>) =>
-  (res: Result<T, E>): Result<T | D, F> =>
-    res.ok ? res : fn(res.err);
-
-export const liftAsync = <T, E>(res: Result<T, E>): ResultAsync<T, E> =>
-  Promise.resolve(res);
+  (box: Box<T, E>): Promise<T | D> =>
+    box.then((r) => (r.ok ? r.val : v));
 
 export const map =
-  <T, D, E>(fn: (val: T) => D) =>
-  (res: Result<T, E>): Result<D, E> =>
-    res.ok ? Yep(fn(res.val)) : res;
-
-export const mapAsync =
   <T, D, E>(fn: (v: T) => D) =>
-  (res: ResultAsync<T, E>): ResultAsync<D, E> =>
-    res.then((r) => (r.ok ? Yep(fn(r.val)) : r));
+  (box: Box<T, E>): Box<D, E> =>
+    box.then((r) => (r.ok ? _yep(fn(r.val)) : r));
 
-export const mapErr =
+export const err =
   <T, E, F>(fn: (err: E) => F) =>
-  (res: Result<T, E>): Result<T, F> =>
-    !res.ok ? Nope(fn(res.err)) : res;
+  (box: Box<T, E>): Box<T, F> =>
+    box.then((r) => (r.ok ? r : _nah(fn(r.err))));
 
 export const flat =
-  <T, D, E, F>(fn: (val: T) => Result<D, F>) =>
-  (res: Result<T, E>): Result<D, E | F> =>
-    res.ok ? fn(res.val) : res;
+  <T, D, E, F>(fn: (v: T) => Box<D, F>) =>
+  (box: Box<T, E>): Box<D, F | E> =>
+    box.then((r): Box<D, F | E> => (r.ok ? fn(r.val) : nah(r.err)));
 
-export const flatAsync =
-  <T, D, E, F>(fn: (v: T) => ResultAsync<D, F> | Result<D, F>) =>
-  (res: ResultAsync<T, E>): ResultAsync<D, F | E> =>
-    res.then((r): ResultAsync<D, F | E> | Result<D, F | E> =>
-      r.ok ? fn(r.val) : Nope(r.err),
-    );
-
-
-export const from =
-  // biome-ignore lint/suspicious/noExplicitAny: must use any for fn args
-    <E>(fn: (...args: any[]) => any, err: E) =>
-    <T>(...args: Parameters<typeof fn>): Result<T, E> => {
-      try {
-        return Yep(fn(...args));
-      } catch (_) {
-        return Nope(err);
-      }
-    };
- 
+export const or =
+  <T, D, E, F>(fn: (e: E) => Box<D, F>) =>
+  (box: Box<T, E>): Box<T | D, F> =>
+    box.then((r): Box<T | D, F> => r.ok ? yep(r.val) : fn(r.err));
