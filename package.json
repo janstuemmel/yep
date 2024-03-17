@@ -1,15 +1,34 @@
 {
-  "type": "module",
+  "version": "0.1.0",
   "name": "yep",
+  "description": "an easy fp lib for typescript",
+  "type": "module",
   "main": "./dist/lib.js",
+  "exports": {
+    "*": {
+      "types": "./dist/lib.d.ts",
+      "require": "./dist/lib.cjs",
+      "import": "./dist/lib.js"
+    }
+  },
   "scripts": {
     "test": "vitest",
     "type-check": "tsc --noEmit",
-    "build": "rm -rf dist && tsc"
+    "build": "tsup",
+    "check:apply": "biome check . --apply",
+    "check:ci": "biome check ."
+  },
+  "tsup": {
+    "entry": ["lib.ts"],
+    "format": ["esm", "cjs"],
+    "dts": true,
+    "clean": true,
+    "outDir": "./dist"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.6.1",
     "@types/node": "^20.11.28",
+    "tsup": "^8.0.2",
     "typescript": "^5.4.2",
     "vitest": "^1.4.0"
   }

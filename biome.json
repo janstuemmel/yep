@@ -9,5 +9,8 @@
       "bracketSameLine": true,
       "quoteStyle": "single"
     }
+  },
+  "files": {
+    "ignore": ["./dist/*"]
   }
 }
