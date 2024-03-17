@@ -1,5 +1,5 @@
 import {expect, it} from 'vitest';
-import {type Box, err, flat, map, nah, or, unbox, yep, pipe} from './lib.js';
+import {type Box, err, flat, map, nah, or, pipe, unbox, yep} from './lib.js';
 
 type Expect<T extends true> = T;
 type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y

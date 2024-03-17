@@ -65,4 +65,4 @@ export const flat =
 export const or =
   <T, D, E, F>(fn: (e: E) => Box<D, F>) =>
   (box: Box<T, E>): Box<T | D, F> =>
-    box.then((r): Box<T | D, F> => r.ok ? yep(r.val) : fn(r.err));
+    box.then((r): Box<T | D, F> => (r.ok ? yep(r.val) : fn(r.err)));
