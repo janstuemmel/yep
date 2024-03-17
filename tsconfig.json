@@ -3,7 +3,8 @@
     "strict": true,
     "outDir": "dist",
     "skipLibCheck": true,
-    "declaration": true
+    "declaration": true,
+    "lib": ["ES2022"]
   },
   "include": ["lib.ts"]
 }

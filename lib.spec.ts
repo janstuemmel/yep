@@ -1,16 +1,20 @@
 import {it, expect} from 'vitest';
 
 import {
+  pipe,
   Nope,
   type Result,
   Yep,
   flat,
   map,
   unwrap,
-  pipe,
   from,
   mapErr,
   orElse,
+  mapAsync,
+  liftAsync,
+  flatAsync,
+  unwrapAsync,
 } from './lib.js';
 
 type Expect<T extends true> = T;
@@ -86,8 +90,7 @@ it('should json parse', () => {
 it('should from', () => {
   const unmarsh = from(JSON.parse, new Error('parse error'));
   pipe(
-    '{"foo": 1}',
-    unmarsh<{foo: number}>,
+    unmarsh<{foo: number}>('{"foo": 1}'),
     map((v) => v.foo),
     unwrap(0),
     expectEqual(1),
@@ -105,21 +108,21 @@ it('should from', () => {
 it('should map error', () => {
   pipe(
     Yep(0),
-    flat((n) => (n !== 0 ? Yep(n) : Nope(new Error))),
+    flat((n) => (n !== 0 ? Yep(n) : Nope(new Error()))),
     mapErr(() => 'custom error'),
     map((n) => n + 1),
-    expectEqual(Nope('custom error'))
+    expectEqual(Nope('custom error')),
   );
 });
 
 it('should orElse error', () => {
   const foo = pipe(
     Yep(0),
-    flat((n) => (n !== 0 ? Yep(n) : Nope(new Error))),
+    flat((n) => (n !== 0 ? Yep(n) : Nope(new Error()))),
     orElse(() => Yep(1)),
     map((n) => n + 1),
     unwrap(0),
-    expectEqual(2)
+    expectEqual(2),
   );
 });
 
@@ -129,11 +132,44 @@ it('should accumulate types', () => {
 
   const fn1 = (n: number) => (n !== 0 ? Yep(n) : Nope(new Error2()));
   const fn2 = (n: number) => (n !== 0 ? Yep(n) : Nope(new Error1()));
-  const fn3 = (n: number) => (n !== 0 ? Yep(n) : Nope('1'));
+  const fn3 = (n: number) => (n !== 0 ? Yep(n) : Nope('err'));
 
   const test = pipe(Yep(2), flat(fn1), flat(fn2), flat(fn3));
 
   type _test = Expect<
     Equal<typeof test, Result<number, Error1 | Error2 | string>>
   >;
+});
+
+it('should map/flat async', async () => {
+  class Error1 extends Error {}
+  class Error2 extends Error {}
+  const delay = (ms: number) => (n: number) =>
+    new Promise((res) => setTimeout(res, ms)).then(() => Yep(n));
+
+  const test = await pipe(
+    Yep(3),
+    liftAsync,
+    flatAsync((n) => (n !== 0 ? Yep(n) : Nope(new Error1))),
+    flatAsync((n) => (n !== 1 ? Yep(n) : Nope(new Error2))),
+    flatAsync(delay(1)),
+    mapAsync((n) => n + 1),
+    flatAsync((n) => Yep(n.toString())),
+  );
+
+  type _test = Expect<
+    Equal<typeof test, Result<string, Error1 | Error2>>
+  >;
+
+  expect(test).toEqual({ok: true, val: '4'});
+});
+
+it('should unwrap async', async () => {
+  const test = await pipe(
+    Yep(0),
+    liftAsync,
+    flatAsync((n) => (n !== 0 ? Yep(n) : Nope('err'))),
+    unwrapAsync('err'),
+  );
+  expect(test).toEqual('err');
 });
