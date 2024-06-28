@@ -8,6 +8,14 @@ const _nah = <E>(err: E): Nah<E> => ({ok: false, err});
 export const yep = <T>(v: T): Box<T, never> => Promise.resolve(_yep(v));
 export const nah = <E>(err: E): Box<never, E> => Promise.resolve(_nah(err));
 
+type GetYep<T extends Yep<any>> = T extends Yep<infer U> ? U : never;
+
+type GetBoxYep<T extends Box<any, any>> = T extends Promise<infer U>
+  ? U extends Yep<infer Y>
+    ? Y
+    : never
+  : never;
+
 type Pipe = {
   <A>(a: A): A;
   <A, B>(a: A, ab: (a: A) => B): B;
@@ -66,3 +74,14 @@ export const or =
   <T, D, E, F>(fn: (e: E) => Box<D, F>) =>
   (box: Box<T, E>): Box<T | D, F> =>
     box.then((r): Box<T | D, F> => (r.ok ? yep(r.val) : fn(r.err)));
+
+export const all = <const A extends Box<any, any>[]>(
+  a: A,
+): Box<{[I in keyof A]: GetBoxYep<A[I]>}, never> =>
+  Promise.all(a).then((res) =>
+    _yep(
+      res.filter((v) => v.ok).map((v) => v.val) as {
+        [I in keyof A]: GetBoxYep<A[I]>;
+      },
+    ),
+  );

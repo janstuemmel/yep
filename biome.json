@@ -10,6 +10,13 @@
       "quoteStyle": "single"
     }
   },
+  "linter": {
+    "rules": {
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
+    }
+  },
   "files": {
     "ignore": ["./dist/*"]
   }
