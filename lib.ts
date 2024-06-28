@@ -8,12 +8,11 @@ const _nah = <E>(err: E): Nah<E> => ({ok: false, err});
 export const yep = <T>(v: T): Box<T, never> => Promise.resolve(_yep(v));
 export const nah = <E>(err: E): Box<never, E> => Promise.resolve(_nah(err));
 
-type GetYep<T extends Yep<any>> = T extends Yep<infer U> ? U : never;
-
-type GetBoxYep<T extends Box<any, any>> = T extends Promise<infer U>
-  ? U extends Yep<infer Y>
-    ? Y
-    : never
+type GetBoxYep<T extends Box<any, any>> = T extends Box<infer U, any>
+  ? U
+  : never;
+type GetBoxNah<T extends Box<any, any>> = T extends Box<any, infer U>
+  ? U
   : never;
 
 type Pipe = {
@@ -77,11 +76,17 @@ export const or =
 
 export const all = <const A extends Box<any, any>[]>(
   a: A,
-): Box<{[I in keyof A]: GetBoxYep<A[I]>}, never> =>
+): Box<{[I in keyof A]: GetBoxYep<A[I]>}, GetBoxNah<A[number]>> =>
   Promise.all(a).then((res) =>
-    _yep(
-      res.filter((v) => v.ok).map((v) => v.val) as {
-        [I in keyof A]: GetBoxYep<A[I]>;
-      },
+    pipe(
+      res.find((r) => r.ok === false),
+      (err) =>
+        err
+          ? err
+          : _yep(
+              res.map((v) => (v as Yep<any>).val) as {
+                [I in keyof A]: GetBoxYep<A[I]>;
+              },
+            ),
     ),
   );
