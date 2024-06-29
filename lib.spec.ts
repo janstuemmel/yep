@@ -1,5 +1,16 @@
 import {expect, it} from 'vitest';
-import {type Box, err, flat, map, nah, or, pipe, unbox, yep} from './lib.js';
+import {
+  type Box,
+  err,
+  flat,
+  map,
+  nah,
+  or,
+  pipe,
+  unbox,
+  yep,
+  all,
+} from './lib.js';
 
 type Expect<T extends true> = T;
 type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
@@ -68,6 +79,23 @@ it('should or', async () => {
       or(() => nah('other err')),
     ),
   ).toEqual({ok: false, err: 'other err'});
+});
+
+it('should all', async () => {
+  const p1 = pipe(
+    yep(1),
+    map((n) => n + 1),
+  );
+  const p2 = pipe(
+    yep(1),
+    map((n) => n + 1),
+  );
+  const program = pipe(
+    all([p1, p2]),
+    map(([o, t]) => o + t),
+    unbox(0),
+  );
+  expect(await program).toEqual(4);
 });
 
 it('should accumulate errors', async () => {
