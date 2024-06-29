@@ -13,10 +13,10 @@
   },
   "scripts": {
     "test": "vitest",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc",
     "build": "tsup",
-    "check:apply": "biome check . --apply",
-    "check:ci": "biome check ."
+    "check": "biome check .",
+    "check:apply": "biome check . --apply"
   },
   "tsup": {
     "entry": ["lib.ts"],

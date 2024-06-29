@@ -91,10 +91,12 @@ it('should all', async () => {
     map((n) => n + 1),
   );
   const program = pipe(
-    all([p1, p2]),
-    map(([o, t]) => o + t),
+    yep([p1, p2]),
+    flat(all),
+    map(([v, w]) => v + w),
     unbox(0),
   );
+
   expect(await program).toEqual(4);
 });
 
