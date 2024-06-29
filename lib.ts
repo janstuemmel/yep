@@ -45,7 +45,6 @@ type Pipe = {
   ): G;
 };
 
-
 const _yep = <T>(val: T): Yep<T> => ({ok: true, val});
 const _nah = <E>(err: E): Nah<E> => ({ok: false, err});
 
@@ -64,7 +63,6 @@ export const nah = <E>(err: E): Box<never, E> => Promise.resolve(_nah(err));
  */
 export const isYep = (v: Yep<any> | Nah<any>) => v.ok;
 
-
 /**
  * Checks if Yep or Nah is Nah
  */
@@ -76,22 +74,21 @@ export const isNone = (v: Yep<any> | Nah<any>) => !v.ok;
  * @example
  * const add = (b: number) => (a: number) => a + b
  * const div = (b: number) => (a: number) => a / b
- * 
+ *
  * const res = pipe(2, add(2), div(2))
  * assert.equal(res, 2)
  */
 export const pipe: Pipe = (val: unknown, ...fns: ((n: unknown) => unknown)[]) =>
   fns.reduce((c, fn) => fn(c), val);
 
-
 /**
  * Unwraps a `Box<T, E>` ans returns `Yep<T>` or `Nah<E>`
- * 
+ *
  * @example
  * const res1 = unbox(0)(yep(1))
  * assert.equal(res1, 1)
  *
- * const res2 = unbox(0)(nah(1))
+ * const res2 = await unbox(0)(nah(1))
  * assert.equal(res2, 0)
  */
 export const unbox =
@@ -101,17 +98,17 @@ export const unbox =
 
 /**
  * Maps a value `T` of a `Box<T, E>` and returns a `Box<D, E>`
- * 
+ *
  * @param fn - A function that takes a value `T` and returns a value `D`
  * @returns A new `Box<D, E>`
- * 
+ *
  * @example
- * const res = pipe(
+ * const res = await pipe(
  *   yep(1),
  *   map(n => n + 1)
  *   unbox(0)
  * )
- * 
+ *
  * assert.euqal(res, 2)
  */
 export const map =
@@ -121,16 +118,16 @@ export const map =
 
 /**
  * Maps an error `E` of a `Box<T, E>` to a `Box<T, F>`
- * 
+ *
  * @param fn - A function that takes an error `E` and returns an error `F`
  * @returns A new error `F`
- * 
+ *
  * @example
- * const res = pipe(
+ * const res = await pipe(
  *   nah('err'),
  *   err(() => 'other')
  * )
- * 
+ *
  * assert.equal(res, {ok: false, err: 'other'})
  */
 export const err =
@@ -140,17 +137,17 @@ export const err =
 
 /**
  * Maps a value `T` of a `Box<T, E>` and returns a `Box<D, E | F>`
- * 
+ *
  * @param fn - A function that takes a value `T` and returns a `Box<D, F>`
  * @returns A new `Box<D, E | F>`
- * 
+ *
  * @example
- * const res = pipe(
+ * const res = await pipe(
  *   yep(1),
  *   flat(n => yep(n + 1))
  *   unbox(0)
  * )
- * 
+ *
  * assert.euqal(res, 2)
  */
 export const flat =
@@ -160,17 +157,17 @@ export const flat =
 
 /**
  * Maps an error `E` of a `Box<T, E>` to a `Box<T | D, F>`
- * 
+ *
  * @param fn - A function that takes an error `E` and returns a `Box<T | D, F>`
  * @returns A new `Box<T | D, E>`
- * 
+ *
  * @example
- * const res = pipe(
+ * const res = await pipe(
  *   nah('err'),
  *   or((e) => yep(`${e} recoverd`))
  *   unbox('')
  * )
- * 
+ *
  * assert.euqal(res, 'err recovered')
  */
 export const or =
@@ -180,15 +177,15 @@ export const or =
 
 /**
  * Takes an array of Boxes<any, any> and returns a Box<any[], any>
- * 
+ *
  * @example
- * const res = pipe(
+ * const res = await pipe(
  *   all([yep(1), yep(3)]),
  *   map(([n1, n2]) => n1 + n2),
  *   unbox(0)
  * )
- * 
- * asser.equal(res, 4)
+ *
+ * assert.equal(res, 4)
  */
 export const all = <const A extends Box<any, any>[]>(
   a: A,
