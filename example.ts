@@ -1,15 +1,3 @@
-# yep
-
-A functional programming library that treats every result as promise 
-and therefor doesn't differentiate between async and sync code.
-
-The code should showcase that fp is not hard in typecript.
-
-Please look at examples and tests.
-
-## Usage
-
-```ts
 import {flat, map, pipe, yep, nah, type Box, or, all} from './lib.js';
 
 class HttpError extends Error {}
@@ -49,4 +37,3 @@ const program = pipe(
 );
 
 program.then(console.log);
-```
