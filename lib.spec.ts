@@ -1,6 +1,7 @@
 import {expect, it} from 'vitest';
 import {
   type Box,
+  all,
   err,
   flat,
   map,
@@ -9,7 +10,6 @@ import {
   pipe,
   unbox,
   yep,
-  all,
 } from './lib.js';
 
 type Expect<T extends true> = T;

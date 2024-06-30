@@ -1,4 +1,4 @@
-import {flat, map, pipe, yep, nah, type Box, or, all} from './lib.js';
+import {type Box, all, flat, map, nah, or, pipe, yep} from './lib.js';
 
 class HttpError extends Error {}
 class ParseError extends Error {}

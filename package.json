@@ -16,7 +16,7 @@
     "type-check": "tsc",
     "build": "tsup",
     "check": "biome check .",
-    "check:apply": "biome check . --apply"
+    "check:apply": "biome check . --write"
   },
   "tsup": {
     "entry": ["lib.ts"],
