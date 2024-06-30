@@ -85,7 +85,7 @@ export const pipe: Pipe = (val: unknown, ...fns: ((n: unknown) => unknown)[]) =>
  * Unwraps a `Box<T, E>` ans returns `Yep<T>` or `Nah<E>`
  *
  * @example
- * const res1 = unbox(0)(yep(1))
+ * const res1 = await unbox(0)(yep(1))
  * assert.equal(res1, 1)
  *
  * const res2 = await unbox(0)(nah(1))
