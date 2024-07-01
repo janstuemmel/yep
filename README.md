@@ -10,7 +10,7 @@ Please look at examples and tests.
 ## Usage
 
 ```ts
-import {flat, map, pipe, yep, nah, type Box, or, all} from './lib.js';
+import {type Box, all, flat, map, nah, or, pipe, tap, yep} from './lib.js';
 
 class HttpError extends Error {}
 class ParseError extends Error {}
@@ -33,6 +33,7 @@ const getPokemon = (name: string) =>
   pipe(
     yep(`https://pokeapi.co/api/v2/pokemon/${name}`),
     flat(req),
+    tap((res) => console.log(`Requested ${name} with response status ${res.status}`)),
     flat(checkStatus),
     flat(parse<{weight: number; name: string}>),
   );
