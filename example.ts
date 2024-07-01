@@ -21,7 +21,9 @@ const getPokemon = (name: string) =>
   pipe(
     yep(`https://pokeapi.co/api/v2/pokemon/${name}`),
     flat(req),
-    tap((res) => console.log(`Requested ${name} with response status ${res.status}`)),
+    tap((res) =>
+      console.log(`Requested ${name} with response status ${res.status}`),
+    ),
     flat(checkStatus),
     flat(parse<{weight: number; name: string}>),
   );

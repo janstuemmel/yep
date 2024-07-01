@@ -177,10 +177,10 @@ export const or =
 
 /**
  * Performs a side effect on a value `T` of `Box<T, E>` and returns `Box<T, E>`
- * 
+ *
  * @param fn - A function that takes a value `T` and returns void
  * @returns The provided `Box<T, E>`
- * 
+ *
  * @example
  * const res = await pipe(
  *   map('info'),
@@ -195,9 +195,9 @@ export const tap =
   (box: Box<T, E>): Box<T, E> =>
     box.then((r) => {
       if (r.ok) {
-        fn(r.val)
+        fn(r.val);
       }
-      return box
+      return box;
     });
 
 /**
