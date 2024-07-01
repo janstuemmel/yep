@@ -183,7 +183,7 @@ export const or =
  * 
  * @example
  * const res = await pipe(
- *   tap('info'),
+ *   map('info'),
  *   tap((val) => console.log(`Debug: ${val}`)),
  *   unbox('')
  * )
