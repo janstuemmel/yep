@@ -1,4 +1,4 @@
-import {expect, it} from 'vitest';
+import {expect, it, vi} from 'vitest';
 import {
   type Box,
   all,
@@ -8,6 +8,7 @@ import {
   nah,
   or,
   pipe,
+  tap,
   unbox,
   yep,
 } from './lib.js';
@@ -79,6 +80,15 @@ it('should or', async () => {
       or(() => nah('other err')),
     ),
   ).toEqual({ok: false, err: 'other err'});
+});
+
+it('should tap', async () => {
+  const spy = vi.fn();
+  await pipe(yep('info'), tap(spy));
+  expect(spy).toHaveBeenCalledWith('info');
+  spy.mockReset();
+  await pipe(nah('err'), tap(spy));
+  expect(spy).not.toHaveBeenCalled();
 });
 
 it('should all', async () => {

@@ -176,6 +176,31 @@ export const or =
     box.then((r): Box<T | D, F> => (r.ok ? yep(r.val) : fn(r.err)));
 
 /**
+ * Performs a side effect on a value `T` of `Box<T, E>` and returns `Box<T, E>`
+ * 
+ * @param fn - A function that takes a value `T` and returns void
+ * @returns The provided `Box<T, E>`
+ * 
+ * @example
+ * const res = await pipe(
+ *   tap('info'),
+ *   tap((val) => console.log(`Debug: ${val}`)),
+ *   unbox('')
+ * )
+ *
+ * assert.euqal(res, 'info')
+ */
+export const tap =
+  <T, E>(fn: (v: T) => void) =>
+  (box: Box<T, E>): Box<T, E> =>
+    box.then((r) => {
+      if (r.ok) {
+        fn(r.val)
+      }
+      return box
+    });
+
+/**
  * Takes an array of Boxes<any, any> and returns a Box<any[], any>
  *
  * @example

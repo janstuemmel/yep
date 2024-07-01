@@ -1,4 +1,4 @@
-import {type Box, all, flat, map, nah, or, pipe, yep} from './lib.js';
+import {type Box, all, flat, map, nah, or, pipe, tap, yep} from './lib.js';
 
 class HttpError extends Error {}
 class ParseError extends Error {}
@@ -22,6 +22,7 @@ const getPokemon = (name: string) =>
     yep(`https://pokeapi.co/api/v2/pokemon/${name}`),
     flat(req),
     flat(checkStatus),
+    tap(console.log),
     flat(parse<{weight: number; name: string}>),
   );
 
